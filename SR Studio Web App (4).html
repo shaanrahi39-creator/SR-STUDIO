@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- SEO Meta Tags for Google Search -->
+    <meta name="description" content="SR Studio - Free online tools for photo resizing, photo to PDF maker, PDF size reducer, and merging PDF files. No login or ads.">
+    <meta name="keywords" content="photo resizer, photo to pdf maker, reduce pdf size, pdf size reducer, merge pdf, image to pdf, compress pdf, image compression">
+    <meta name="author" content="SR Studio">
+    
+    <title>SR Studio | Photo Resizer, Photo to PDF & PDF Tools</title>
+    
+    <!-- Google Analytics Tracking Code (For your eyes only) -->
+    <!-- INSTRUCTIONS: Sign up for free at Google Analytics, get your Tracking ID (G-XXXXXXXXXX), and replace 'YOUR_TRACKING_ID' below -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=YOUR_TRACKING_ID"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'YOUR_TRACKING_ID');
+    </script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden; /* यह कोड ब्राउज़र के स्लाइड/स्क्रॉल होने को पूरी तरह रोक देगा */
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* Prevent accidental text selection on mobile */
+        }
+
+        body {
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Main App Container matches the Android phone shape in the image */
+        .app-container {
+            width: 100%;
+            max-width: 400px;
+            height: 100%; /* 100vh से बदलकर 100% कर दिया ताकि यह स्क्रीन के अंदर ही रहे */
+            max-height: 800px;
+            background: #ffffff; /* PURE WHITE BACKGROUND AS REQUESTED */
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 0 0 2px rgba(255,255,255,0.7); /* Added 3D pop effect */
+            border: 4px solid black;
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 450px) {
+            .app-container {
+                border-radius: 0;
+                border: none;
+                max-height: 100%;
+                height: 100%;
+            }
+        }
+
+        /* --- ADVANCED AGGRESSIVE ANIMATIONS --- */
+        @keyframes smoothDropFade {
+            0% { 
+                opacity: 0; 
+                transform: translateY(-40px) scale(0.98); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+        
+        @keyframes intenseGlow {
+            0% { box-shadow: inset 0 -5px 0 rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.25), 0 0 5px rgba(255,255,255,0.2); }
+            50% { box-shadow: inset 0 -5px 0 rgba(0,0,0,0.2), 0 12px 25px rgba(0,0,0,0.4), 0 0 15px rgba(255,255,255,0.5); transform: translateY(-2px); }
+            100% { box-shadow: inset 0 -5px 0 rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.25), 0 0 5px rgba(255,255,255,0.2); }
+        }
+
+        @keyframes pulseBorder {
+            0% { border-color: black; }
+            50% { border-color: #0f62fe; }
+            100% { border-color: black; }
+        }
+
+        @keyframes shineGlow {
+            0% { left: -100%; opacity: 0; }
+            20% { left: 100%; opacity: 1; }
+            100% { left: 100%; opacity: 0; }
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        @keyframes slideInRight {
+            0% { opacity: 0; transform: translateX(30px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Screen Management - WITH SMOOTH DROP FADE ANIMATION */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            padding: 15px;
+            overflow-y: auto;
+            position: relative;
+            z-index: 10;
+        }
+        .screen.active {
+            display: flex;
+            animation: smoothDropFade 0.5s ease-out forwards;
+        }
+
+        /* Common Elements */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 30px;
+            font-weight: bold;
+            color: black;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .box {
+            border: 2px solid black;
+            border-radius: 15px;
+            background-color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .box:hover {
+            animation: pulseBorder 1.5s infinite;
+        }
+
+        .btn {
+            border: 2px solid black;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            color: black;
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 5px; height: 5px;
+            background: rgba(255,255,255,0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        .btn:active::after {
+            animation: ripple 0.4s ease-out;
+        }
+        @keyframes ripple {
+            0% { transform: scale(0, 0); opacity: 0.5; }
+            100% { transform: scale(20, 20); opacity: 0; }
+        }
+        .btn:active {
+            transform: scale(0.9) translateY(4px);
+            box-shadow: inset 0 -2px 0 rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.4);
+        }
+
+        /* NATURAL FIRE EFFECT FOR ALL ACTION BUTTONS */
+        .btn::before {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: -20%;
+            width: 140%;
+            height: 55px;
+            background: 
+                radial-gradient(ellipse at 30% 100%, rgba(255, 69, 0, 0.85) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 100%, rgba(255, 140, 0, 0.95) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 120%, rgba(255, 215, 0, 0.95) 0%, transparent 70%);
+            filter: blur(3px);
+            animation: realisticFire 0.5s infinite alternate ease-in-out;
+            pointer-events: none;
+            mix-blend-mode: hard-light;
+            z-index: 0;
+        }
+
+        /* Specific Button Colors from Image */
+        .btn-green { background-color: #69b951; color: white; text-shadow: 1px 1px 0 #000, 0 0 5px rgba(0,0,0,0.8); }
+        .btn-light-green { background-color: #d9e6c4; }
+        .btn-blue { background: linear-gradient(to bottom, #aed4ff, #82baff); text-shadow: 1px 1px 2px rgba(255,255,255,0.9); }
+        .btn-red { background: linear-gradient(to bottom, #ff9999, #f25c5c); color: white; text-shadow: 1px 1px 0 #000, 0 0 5px rgba(0,0,0,0.8); }
+        
+        /* --- NEW ADVANCED HOME SCREEN STYLES --- */
+        .welcome-box {
+            background: linear-gradient(270deg, #1a365d, #0f62fe, #1a365d);
+            background-size: 200% 200%;
+            animation: gradientShift 4s ease infinite, floating 3s ease-in-out infinite;
+            border: 2px solid black;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            font-weight: 900;
+            font-size: 16px;
+            color: white;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* DUST FLYING ANIMATION FOR WELCOME BOX */
+        .welcome-box::before, .welcome-box::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+        .welcome-box::before {
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255,255,255,0.9) 1.5px, transparent 1.5px),
+                radial-gradient(circle at 80% 40%, rgba(255,255,255,0.6) 1px, transparent 1px),
+                radial-gradient(circle at 30% 70%, rgba(255,255,255,0.8) 2px, transparent 2px),
+                radial-gradient(circle at 60% 90%, rgba(255,255,255,0.5) 1px, transparent 1px);
+            background-size: 80px 80px;
+            animation: flyDust 10s linear infinite;
+        }
+        .welcome-box::after {
+            background-image: 
+                radial-gradient(circle at 50% 10%, rgba(255,255,255,0.7) 1px, transparent 1px),
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,1) 1.5px, transparent 1.5px),
+                radial-gradient(circle at 90% 60%, rgba(255,255,255,0.5) 2px, transparent 2px);
+            background-size: 60px 60px;
+            animation: flyDust 7s linear infinite reverse;
+        }
+        @keyframes flyDust {
+            0% { background-position: 0px 0px; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { background-position: 100px -100px; opacity: 0; }
+        }
+
+        .btn-action-animated {
+            border: 2px solid black;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 13px;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            color: black;
+            height: 85px;
+            gap: 5px;
+            /* Added 3D Box Effect */
+            box-shadow: inset 0 -5px 0 rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.25);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.1s, filter 0.2s;
+            z-index: 1;
+        }
+        
+        /* Keep icon and text above the fire */
+        .btn-action-animated > svg, .btn-action-animated > span {
+            position: relative;
+            z-index: 2;
+            text-shadow: 1px 1px 3px rgba(255,255,255,0.9); /* Improves readability against fire */
+        }
+
+        .btn-action-animated:hover {
+            animation: intenseGlow 2s infinite;
+            filter: brightness(1.1);
+        }
+
+        .btn-action-animated svg {
+            width: 26px;
+            height: 26px;
+            stroke: black;
+            transition: transform 0.3s ease;
+        }
+        .btn-action-animated:hover svg {
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        /* Different elegant gradients for each action button */
+        .btn-action-animated:nth-child(1) { animation-delay: 0.1s; background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%); }
+        .btn-action-animated:nth-child(2) { animation-delay: 0.4s; background: linear-gradient(135deg, #fff1eb 0%, #ace0f9 100%); }
+        .btn-action-animated:nth-child(3) { animation-delay: 0.2s; background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); }
+        .btn-action-animated:nth-child(4) { animation-delay: 0.5s; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); }
+
+        /* NATURAL FIRE EFFECT */
+        .btn-action-animated::before {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: -20%;
+            width: 140%;
+            height: 70px;
+            background: 
+                radial-gradient(ellipse at 30% 100%, rgba(255, 69, 0, 0.85) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 100%, rgba(255, 140, 0, 0.95) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 120%, rgba(255, 215, 0, 0.95) 0%, transparent 70%);
+            filter: blur(4px);
+            animation: realisticFire 0.5s infinite alternate ease-in-out;
+            z-index: -1;
+            pointer-events: none;
+            mix-blend-mode: hard-light;
+        }
+        
+        @keyframes realisticFire {
+            0% { transform: translateY(0px) scaleY(1) scaleX(1); opacity: 0.8; }
+            25% { transform: translateY(-3px) scaleY(1.1) scaleX(1.02); opacity: 1; }
+            50% { transform: translateY(-1px) scaleY(0.95) scaleX(0.98); opacity: 0.9; }
+            75% { transform: translateY(-5px) scaleY(1.15) scaleX(1.05); opacity: 1; }
+            100% { transform: translateY(0px) scaleY(1) scaleX(1); opacity: 0.8; }
+        }
+
+        .btn-action-animated:active {
+            /* 3D Button Press Effect - MORE AGGRESSIVE */
+            transform: scale(0.9) translateY(6px) !important;
+            box-shadow: inset 0 -2px 0 rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.4) !important;
+            filter: brightness(0.9);
+        }
+
+        .info-box {
+            background: linear-gradient(to bottom, #e6f0ff, #b3d1ff);
+            border: 2px solid black;
+            border-radius: 10px;
+            padding: 8px;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+        .info-box:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Target Box from A1 */
+        .target-box {
+            background-color: #1a365d;
+            border: 2px solid black;
+            border-radius: 10px;
+            padding: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .target-box input {
+            background: white;
+            border: 1px solid black;
+            width: 60px;
+            padding: 2px 5px;
+            font-weight: bold;
+        }
+        .target-box input::placeholder {
+            color: #888;
+            font-weight: normal;
+            font-size: 10px;
+        }
+
+        /* YN BOX from A1 */
+        .yn-box {
+            background-color: #e5e5e5;
+            border: 2px solid black;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        .yn-box label {
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .yn-box input[type=range] {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        /* Image Display Area */
+        .img-display {
+            background: linear-gradient(to bottom, #cce0ff, #99c2ff);
+            border: 2px solid black;
+            border-radius: 15px;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            overflow: hidden;
+            font-weight: bold;
+            font-size: 12px;
+            color: black;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .img-display:hover {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .img-display img, .img-display canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            position: absolute;
+            animation: smoothDropFade 0.5s ease-out forwards;
+        }
+
+        /* FT BOX from B1 & D1 */
+        .ft-box {
+            background-color: white;
+            border: 2px solid black;
+            border-radius: 10px;
+            flex: 1;
+            margin-bottom: 15px;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 200px;
+        }
+        .ft-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideInRight 0.3s ease-out forwards;
+            opacity: 0;
+        }
+        /* Staggered animation for list items */
+        .ft-item:nth-child(1) { animation-delay: 0.05s; }
+        .ft-item:nth-child(2) { animation-delay: 0.1s; }
+        .ft-item:nth-child(3) { animation-delay: 0.15s; }
+        .ft-item:nth-child(4) { animation-delay: 0.2s; }
+        .ft-item:nth-child(5) { animation-delay: 0.25s; }
+
+        .ft-item .icon {
+            width: 30px; height: 30px; border: 2px solid black; background: #eee;
+            display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold;
+        }
+        .ft-item .details {
+            flex: 1; border: 2px solid black; height: 30px; display: flex; align-items: center; padding: 0 5px; font-size: 10px; overflow: hidden;
+        }
+        .ft-item .del-btn {
+            width: 30px; height: 30px; border: 2px solid black; background: white; color: red; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center;
+        }
+
+        /* GG CRICLE (MM BOX) from C1 */
+        .mm-box {
+            background-color: #e5e5e5;
+            border: 2px solid black;
+            border-radius: 10px;
+            padding: 15px 10px;
+            margin-bottom: 15px;
+        }
+        .mm-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        /* Custom GG Circle slider */
+        input[type=range].gg-circle {
+            -webkit-appearance: none;
+            width: 100%;
+            background: black;
+            height: 4px;
+            outline: none;
+            position: relative;
+        }
+        input[type=range].gg-circle::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff9900;
+            border: 2px solid black;
+            cursor: pointer;
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        input[type=range].gg-circle::-webkit-slider-thumb:active {
+            transform: scale(1.4);
+            background: #ffaa33;
+            box-shadow: 0 0 10px rgba(255, 153, 0, 0.8);
+        }
+
+        .hidden-file { display: none; }
+        
+        /* --- PROGRESS OVERLAY STYLES --- */
+        .progress-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 160px;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid white;
+            border-radius: 15px;
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .progress-text {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 2px;
+            text-shadow: none;
+        }
+
+        .progress-label {
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        /* Rain Canvas Styles */
+        #rainCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            display: block; /* Visible by default on home screen */
+        }
+
+        /* --- LIGHTNING DOM FLASH EFFECT --- */
+        .lightning-flash-fx {
+            animation: lightningDomFlash 0.6s ease-out;
+        }
+        
+        @keyframes lightningDomFlash {
+            0% { filter: brightness(1) drop-shadow(0 0 0px transparent); }
+            10% { filter: brightness(2.5) drop-shadow(0 0 15px rgba(255,255,255,0.9)); }
+            20% { filter: brightness(1) drop-shadow(0 0 0px transparent); }
+            30% { filter: brightness(3) drop-shadow(0 0 25px rgba(255,255,255,1)); }
+            100% { filter: brightness(1) drop-shadow(0 0 0px transparent); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- Rain Canvas for Home Screen -->
+    <canvas id="rainCanvas"></canvas>
+
+    <!-- ================= HOME SCREEN ================= -->
+    <div id="home-screen" class="screen active" style="justify-content: center; padding: 20px; overflow: hidden;">
+        
+        <div class="welcome-box" style="position: relative; z-index: 10;">
+            WELCOME TO THE SR STUDIO
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; position: relative; z-index: 10;">
+            <button class="btn-action-animated" onclick="nav('a1-screen')">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                <span>PHOTO<br>RESIZER</span>
+            </button>
+            <button class="btn-action-animated" onclick="nav('b1-screen')">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>PHOTO TO<br>PDF</span>
+            </button>
+            <button class="btn-action-animated" onclick="nav('d1-screen')">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                <span>MERGE<br>PDF</span>
+            </button>
+            <button class="btn-action-animated" onclick="nav('c1-screen')">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><polyline points="16 13 12 17 8 13"></polyline><line x1="12" y1="11" x2="12" y2="17"></line></svg>
+                <span>PDF<br>RESIZER</span>
+            </button>
+        </div>
+
+        <div class="notification-box" style="background-color: #1a365d; color: white; border: 2px solid black; border-radius: 10px; padding: 15px; text-align: center; font-size: 12px; font-weight: bold; line-height: 1.4; margin-top: auto; position: relative; z-index: 10;">
+            THIS WEBSITE IS COMPLETELY FREE TO USE.<br>NO LOGIN OR REGISTRATION IS REQUIRED.<br>AND THERE ARE NO ADS.
+        </div>
+    </div>
+
+
+    <!-- ================= A1 SCREEN ================= -->
+    <div id="a1-screen" class="screen">
+        <div class="top-bar">
+            <button class="back-btn" onclick="nav('home-screen')">&#8592;</button>
+        </div>
+
+        <div class="img-display" id="a1-display">
+            <span id="a1-placeholder">SHOW UPLOADED PICTURE</span>
+            <img id="a1-img" style="display:none;" />
+        </div>
+
+        <div class="info-box">
+            <span>UPLOADED PHOTO SIZE IN KB :</span>
+            <span id="a1-orig-size">0</span>
+        </div>
+        <div class="info-box">
+            <span>LIVE SIZE IN KB :</span>
+            <span id="a1-live-size">0</span>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button class="btn btn-blue" style="flex: 1;" onclick="document.getElementById('a1-file').click()">UPLOAD</button>
+            <button class="btn btn-red" style="flex: 1;" onclick="clearA1()">CLEAR</button>
+            <input type="file" id="a1-file" class="hidden-file" accept="image/*" onchange="handleA1Upload(event)">
+        </div>
+
+        <div class="target-box">
+            <span>TARGET SIZE IN KB :</span>
+            <div style="display: flex; gap: 5px;">
+                <input type="number" id="a1-target" placeholder="ex: 50" oninput="handleA1Target()">
+                <button type="button" style="background: #f25c5c; color: white; border: 1px solid black; font-weight: bold; font-size: 10px; padding: 0 5px; cursor: pointer;" onclick="document.getElementById('a1-target').blur()">DONE</button>
+            </div>
+        </div>
+
+        <div class="yn-box" id="a1-yn-box" ontouchstart="document.getElementById('a1-target').blur()" onmousedown="document.getElementById('a1-target').blur()">
+            <label>COMPRESSION QUALITY <span id="a1-q-val">50%</span></label>
+            <input type="range" id="a1-quality" min="1" max="100" value="50" oninput="updateA1Live()">
+            
+            <label>IMAGE DIMENSION <span id="a1-d-val">50%</span></label>
+            <input type="range" id="a1-dim" min="1" max="100" value="50" oninput="updateA1Live()">
+        </div>
+
+        <button class="btn btn-green" style="margin-top: auto;" onclick="downloadA1()">RESIZE AND DOWNLOAD</button>
+    </div>
+
+
+    <!-- ================= B1 SCREEN ================= -->
+    <div id="b1-screen" class="screen">
+        <div class="top-bar">
+            <button class="back-btn" onclick="nav('home-screen')">&#8592;</button>
+        </div>
+
+        <div id="b1-progress" class="progress-overlay">
+            <div class="progress-text" id="b1-progress-val">0%</div>
+            <div class="progress-label">PROCESSING...</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button class="btn btn-blue" style="flex: 1;" onclick="document.getElementById('b1-file').click()">UPLOAD PHOTO</button>
+            <button class="btn btn-red" style="flex: 1;" onclick="clearB1()">CLEAR ALL</button>
+            <input type="file" id="b1-file" class="hidden-file" accept="image/*" multiple onchange="handleB1Upload(event)">
+        </div>
+
+        <div style="font-weight: bold; font-size: 12px; margin-bottom: 5px;">
+            PHOTOS: <span id="b1-count">0</span>
+        </div>
+
+        <div class="ft-box" id="b1-ft-box">
+            <!-- Items added via JS -->
+        </div>
+
+        <button class="btn btn-green" onclick="downloadB1()">DOWNLOAD PHOTO TO PDF</button>
+    </div>
+
+
+    <!-- ================= C1 SCREEN ================= -->
+    <div id="c1-screen" class="screen">
+        <div class="top-bar">
+            <button class="back-btn" onclick="nav('home-screen')">&#8592;</button>
+        </div>
+
+        <button class="btn btn-blue" style="margin-bottom: 10px;" onclick="document.getElementById('c1-file').click()">UPLOAD PDF FILE</button>
+        <input type="file" id="c1-file" class="hidden-file" accept="application/pdf" onchange="handleC1Upload(event)">
+
+        <div style="font-weight: bold; font-size: 12px; margin-bottom: 5px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 10px; min-height: 15px;" id="c1-file-name">
+            <!-- File name will appear here -->
+        </div>
+
+        <div class="info-box">
+            <span>UPLOADED FILE SIZE IN KB :</span>
+            <span id="c1-orig-size">0</span>
+        </div>
+        <div class="info-box">
+            <span>LIVE SIZE IN KB:</span>
+            <span id="c1-live-size">0</span>
+        </div>
+
+        <!-- GG CRICLE inside MM BOX -->
+        <div class="mm-box">
+            <div class="mm-labels">
+                <span>ULTRA</span>
+                <span>MEDIUM</span>
+                <span>LOW</span>
+            </div>
+            <input type="range" class="gg-circle" id="c1-level" min="0" max="2" value="1" onchange="estimateC1()">
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: auto;">
+            <button class="btn btn-green" onclick="downloadC1()">RESIZE AND DOWNLOAD</button>
+            <button class="btn btn-red" style="width: 50%; margin: 0 auto;" onclick="clearC1()">CLEAR</button>
+        </div>
+    </div>
+
+
+    <!-- ================= D1 SCREEN ================= -->
+    <div id="d1-screen" class="screen">
+        <div class="top-bar">
+            <button class="back-btn" onclick="nav('home-screen')">&#8592;</button>
+        </div>
+
+        <div id="d1-progress" class="progress-overlay">
+            <div class="progress-text" id="d1-progress-val">0%</div>
+            <div class="progress-label">MERGING...</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button class="btn btn-blue" style="flex: 1;" onclick="document.getElementById('d1-file').click()">UPLOAD YOUR PDF FILE</button>
+            <button class="btn btn-red" style="flex: 1;" onclick="clearD1()">CLEAR ALL</button>
+            <input type="file" id="d1-file" class="hidden-file" accept="application/pdf" multiple onchange="handleD1Upload(event)">
+        </div>
+        
+        <div style="font-weight: bold; font-size: 12px; margin-bottom: 5px;">
+            PDFS: <span id="d1-count">0</span>
+        </div>
+
+        <div class="ft-box" id="d1-ft-box">
+            <!-- Items added via JS -->
+        </div>
+
+        <button class="btn btn-green" onclick="downloadD1()">MERGE AND DOWNLOAD</button>
+    </div>
+
+</div>
+
+<script>
+    // Utility: Format KB
+    const formatKB = (bytes) => (bytes / 1024).toFixed(1);
+
+    // Utility: Navigation (Instant, NO SLIDE)
+    function nav(screenId) {
+        // Dismiss mobile keyboard when navigating away
+        if(document.activeElement) {
+            document.activeElement.blur();
+        }
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        
+        // Rain is now globally visible across all screens, no need to hide/show it!
+    }
+
+    // Utility: Trigger Download
+    function forceDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // ==========================================
+    // A1: PHOTO RISIZER
+    // ==========================================
+    let a1State = { file: null, canvas: null, processedBlob: null };
+
+    function handleA1Upload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        a1State.file = file;
+        
+        document.getElementById('a1-orig-size').innerText = formatKB(file.size);
+        document.getElementById('a1-placeholder').style.display = 'none';
+        
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+                const imgEl = document.getElementById('a1-img');
+                imgEl.src = ev.target.result;
+                imgEl.style.display = 'block';
+                
+                a1State.canvas = document.createElement('canvas');
+                a1State.canvas.width = img.width;
+                a1State.canvas.height = img.height;
+                a1State.canvas.getContext('2d').drawImage(img, 0, 0);
+                updateA1Live();
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function handleA1Target() {
+        const targetInput = document.getElementById('a1-target');
+        const targetVal = targetInput.value;
+        const ynBox = document.getElementById('a1-yn-box');
+        
+        // अगर बॉक्स पूरी तरह खाली कर दिया जाए (बैकस्पेस से), तो कीबोर्ड अपने आप बंद हो जाए
+        if (targetVal === '') {
+            targetInput.blur();
+        }
+
+        if (targetVal && parseFloat(targetVal) > 0) {
+            ynBox.style.opacity = '0.5';
+            ynBox.style.pointerEvents = 'none';
+        } else {
+            ynBox.style.opacity = '1';
+            ynBox.style.pointerEvents = 'auto';
+            updateA1Live();
+        }
+    }
+
+    function updateA1Live() {
+        if (!a1State.canvas) return;
+        
+        const targetVal = document.getElementById('a1-target').value;
+        if (targetVal && parseFloat(targetVal) > 0) {
+             document.getElementById('a1-live-size').innerText = "Calculating...";
+             return;
+        }
+
+        const q = parseInt(document.getElementById('a1-quality').value);
+        const d = parseInt(document.getElementById('a1-dim').value);
+        
+        document.getElementById('a1-q-val').innerText = q + "%";
+        document.getElementById('a1-d-val').innerText = d + "%";
+
+        const scale = d / 100;
+        const tempCv = document.createElement('canvas');
+        tempCv.width = a1State.canvas.width * scale;
+        tempCv.height = a1State.canvas.height * scale;
+        tempCv.getContext('2d').drawImage(a1State.canvas, 0, 0, tempCv.width, tempCv.height);
+
+        tempCv.toBlob((blob) => {
+            a1State.processedBlob = blob;
+            document.getElementById('a1-live-size').innerText = formatKB(blob.size);
+        }, 'image/jpeg', q / 100);
+    }
+
+    async function downloadA1() {
+        if (!a1State.canvas) return alert("Upload photo first!");
+
+        const targetInput = document.getElementById('a1-target').value;
+        let finalBlob = null;
+
+        if (targetInput && parseFloat(targetInput) > 0) {
+            const targetKB = parseFloat(targetInput);
+            let minQ = 0.01, maxQ = 1.0, bestBlob = null;
+            
+            for(let i=0; i<6; i++) {
+                const midQ = (minQ + maxQ) / 2;
+                const blob = await new Promise(r => a1State.canvas.toBlob(r, 'image/jpeg', midQ));
+                if (blob.size / 1024 > targetKB) maxQ = midQ;
+                else { minQ = midQ; bestBlob = blob; }
+            }
+            finalBlob = bestBlob || await new Promise(r => a1State.canvas.toBlob(r, 'image/jpeg', 0.1));
+        } else {
+            finalBlob = a1State.processedBlob;
+        }
+
+        forceDownload(finalBlob, `resized_${a1State.file.name}`);
+    }
+
+    function clearA1() {
+        // Dismiss mobile keyboard if it's open
+        if(document.activeElement) {
+            document.activeElement.blur();
+        }
+        a1State = { file: null, canvas: null, processedBlob: null };
+        document.getElementById('a1-file').value = '';
+        document.getElementById('a1-orig-size').innerText = "0";
+        document.getElementById('a1-live-size').innerText = "0";
+        document.getElementById('a1-placeholder').style.display = 'block';
+        document.getElementById('a1-img').style.display = 'none';
+        document.getElementById('a1-target').value = '';
+        handleA1Target();
+    }
+
+
+    // ==========================================
+    // B1: PHOTO TO PDF
+    // ==========================================
+    let b1Files = [];
+
+    function handleB1Upload(e) {
+        Array.from(e.target.files).forEach(f => b1Files.push({id: Math.random(), file: f}));
+        renderB1();
+        e.target.value = '';
+    }
+
+    function renderB1() {
+        const box = document.getElementById('b1-ft-box');
+        document.getElementById('b1-count').innerText = b1Files.length;
+        box.innerHTML = '';
+        
+        b1Files.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'ft-item';
+            div.innerHTML = `
+                <div class="icon">IMG</div>
+                <div class="details">${item.file.name} (${formatKB(item.file.size)}KB)</div>
+                <button class="del-btn" onclick="removeB1(${item.id})">X</button>
+            `;
+            box.appendChild(div);
+        });
+    }
+
+    function removeB1(id) {
+        b1Files = b1Files.filter(i => i.id !== id);
+        renderB1();
+    }
+
+    function clearB1() { b1Files = []; renderB1(); }
+
+    async function downloadB1() {
+        if (b1Files.length === 0) return alert("Upload photos first!");
+        
+        const progressOverlay = document.getElementById('b1-progress');
+        const progressVal = document.getElementById('b1-progress-val');
+        progressOverlay.style.display = 'flex';
+        progressVal.innerText = '0%';
+
+        // Use setTimeout to allow UI to update and show overlay before heavy processing
+        setTimeout(async () => {
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pw = pdf.internal.pageSize.getWidth();
+                const ph = pdf.internal.pageSize.getHeight();
+
+                for (let i = 0; i < b1Files.length; i++) {
+                    if (i > 0) pdf.addPage();
+                    
+                    const img = new Image();
+                    img.src = URL.createObjectURL(b1Files[i].file);
+                    await new Promise(r => img.onload = r);
+
+                    const iRatio = img.width / img.height;
+                    const pRatio = pw / ph;
+                    let w = pw, h = ph;
+                    if (iRatio > pRatio) h = pw / iRatio; else w = ph * iRatio;
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                    
+                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.8), 'JPEG', (pw - w) / 2, (ph - h) / 2, w, h);
+                    
+                    // Update progress
+                    const percent = Math.round(((i + 1) / b1Files.length) * 100);
+                    progressVal.innerText = percent + '%';
+                    
+                    // Small yield to let UI update the percentage text
+                    await new Promise(r => setTimeout(r, 10));
+                }
+                pdf.save('photos.pdf');
+            } catch (error) {
+                console.error("Error creating PDF:", error);
+                alert("An error occurred while creating the PDF.");
+            } finally {
+                progressOverlay.style.display = 'none';
+            }
+        }, 50);
+    }
+
+
+    // ==========================================
+    // C1: PDF RISZER
+    // ==========================================
+    let c1File = null;
+    let c1Doc = null;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    async function handleC1Upload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        c1File = file;
+        document.getElementById('c1-file-name').innerText = file.name;
+        document.getElementById('c1-orig-size').innerText = formatKB(file.size);
+        document.getElementById('c1-live-size').innerText = "Calc...";
+
+        const ab = await file.arrayBuffer();
+        try {
+            c1Doc = await pdfjsLib.getDocument(ab).promise;
+            estimateC1();
+        } catch (err) {
+            alert("Error reading PDF");
+        }
+    }
+
+    function estimateC1() {
+        if(!c1Doc) return;
+        const lvl = document.getElementById('c1-level').value; // 0=Ultra, 1=Medium, 2=Low
+        const m = [0.8, 0.5, 0.2][lvl]; 
+        document.getElementById('c1-live-size').innerText = formatKB(c1File.size * m);
+    }
+
+    function clearC1() {
+        c1File = null; c1Doc = null;
+        document.getElementById('c1-file').value = '';
+        document.getElementById('c1-file-name').innerText = '';
+        document.getElementById('c1-orig-size').innerText = "0";
+        document.getElementById('c1-live-size').innerText = "0";
+        document.getElementById('c1-level').value = 1;
+    }
+
+    async function downloadC1() {
+        if (!c1File || !c1Doc) return alert("Upload PDF first!");
+        
+        try {
+            const { jsPDF } = window.jspdf;
+            const newPdf = new jsPDF('p', 'mm', 'a4');
+            const lvl = parseInt(document.getElementById('c1-level').value);
+            const scale = [1.5, 1.0, 0.6][lvl];
+            const qual = [0.8, 0.5, 0.3][lvl];
+
+            for (let i = 1; i <= c1Doc.numPages; i++) {
+                const page = await c1Doc.getPage(i);
+                const vp = page.getViewport({ scale: scale });
+                const canvas = document.createElement('canvas');
+                canvas.width = vp.width; canvas.height = vp.height;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+
+                if (i > 1) newPdf.addPage();
+                const pw = newPdf.internal.pageSize.getWidth();
+                const ph = newPdf.internal.pageSize.getHeight();
+                
+                const ratio = vp.width / vp.height;
+                let w = pw, h = ph;
+                if (ratio > pw/ph) h = pw / ratio; else w = ph * ratio;
+                
+                newPdf.addImage(canvas.toDataURL('image/jpeg', qual), 'JPEG', (pw-w)/2, (ph-h)/2, w, h);
+            }
+            newPdf.save(`resized_${c1File.name}`);
+        } catch (err) {
+            alert("Error compressing");
+        }
+    }
+
+
+    // ==========================================
+    // D1: MARGE PDF
+    // ==========================================
+    let d1Files = [];
+
+    function handleD1Upload(e) {
+        Array.from(e.target.files).forEach(f => d1Files.push({id: Math.random(), file: f}));
+        renderD1();
+        e.target.value = '';
+    }
+
+    function renderD1() {
+        const box = document.getElementById('d1-ft-box');
+        document.getElementById('d1-count').innerText = d1Files.length;
+        box.innerHTML = '';
+        
+        d1Files.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'ft-item';
+            div.innerHTML = `
+                <div class="icon">PDF</div>
+                <div class="details">${item.file.name}</div>
+                <button class="del-btn" onclick="removeD1(${item.id})">X</button>
+            `;
+            box.appendChild(div);
+        });
+    }
+
+    function removeD1(id) { d1Files = d1Files.filter(i => i.id !== id); renderD1(); }
+    function clearD1() { d1Files = []; renderD1(); }
+
+    async function downloadD1() {
+        if (d1Files.length < 2) return alert("Add at least 2 PDFs!");
+        
+        const progressOverlay = document.getElementById('d1-progress');
+        const progressVal = document.getElementById('d1-progress-val');
+        progressOverlay.style.display = 'flex';
+        progressVal.innerText = '0%';
+
+        setTimeout(async () => {
+            try {
+                const mergedPdf = await PDFLib.PDFDocument.create();
+                for (let i = 0; i < d1Files.length; i++) {
+                    const item = d1Files[i];
+                    const pdf = await PDFLib.PDFDocument.load(await item.file.arrayBuffer());
+                    const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    pages.forEach(p => mergedPdf.addPage(p));
+                    
+                    // Update progress
+                    const percent = Math.round(((i + 1) / d1Files.length) * 100);
+                    progressVal.innerText = percent + '%';
+                    
+                    // Small yield to let UI update
+                    await new Promise(r => setTimeout(r, 10));
+                }
+                const blob = new Blob([await mergedPdf.save()], { type: 'application/pdf' });
+                forceDownload(blob, 'merged_file.pdf');
+            } catch (err) {
+                console.error("Error merging files:", err);
+                alert("Error merging files");
+            } finally {
+                progressOverlay.style.display = 'none';
+            }
+        }, 50);
+    }
+
+    // ==========================================
+    // HOME SCREEN RAIN & LIGHTNING ANIMATION
+    // ==========================================
+    const rCanvas = document.getElementById('rainCanvas');
+    const rCtx = rCanvas.getContext('2d');
+    let rWidth, rHeight;
+    let rainDrops = [];
+    let lightnings = [];
+    let lastLightningTime = 0;
+    let lightningInterval = 2000; // 2 seconds initially
+
+    function resizeRain() {
+        rWidth = rCanvas.width = rCanvas.offsetWidth;
+        rHeight = rCanvas.height = rCanvas.offsetHeight;
+    }
+
+    function initRain() {
+        resizeRain();
+        rainDrops = []; // Reset array
+        // एकदम नेचुरल बारिश के लिए सेटिंग (ना ज्यादा फास्ट, ना ज्यादा स्लो)
+        for(let i = 0; i < 180; i++) {
+            rainDrops.push({
+                x: Math.random() * rWidth,
+                y: Math.random() * rHeight,
+                l: Math.random() * 15 + 10, // नेचुरल लम्बाई
+                xs: Math.random() * 1.5 - 0.5, // बहुत हल्की हवा
+                ys: Math.random() * 8 + 10, // नेचुरल गिरने की स्पीड
+                o: Math.random() * 0.4 + 0.1 // अलग-अलग ट्रांसपेरेंसी (3D इफ़ेक्ट के लिए)
+            });
+        }
+        requestAnimationFrame(drawRain);
+    }
+
+    // बिजली का आकार बनाने के लिए फंक्शन
+    function createLightning() {
+        let x = Math.random() * rWidth;
+        let y = 0;
+        let segments = [];
+        segments.push({x, y});
+        while (y < rHeight) {
+            x += (Math.random() - 0.5) * 120; // टेढ़ा-मेढ़ा रास्ता (Jagged left/right)
+            y += Math.random() * 40 + 20; // नीचे की ओर
+            segments.push({x, y});
+        }
+        return { segments, life: 25, maxLife: 25 };
+    }
+
+    // लाइटनिंग इफ़ेक्ट को ट्रिगर करने वाला फंक्शन
+    function triggerLightning() {
+        lightnings.push(createLightning());
+
+        // डोम एलिमेंट्स पर चमक (Flash) इफ़ेक्ट लागू करें
+        const targets = document.querySelectorAll('.welcome-box, .btn-action-animated, .notification-box');
+        targets.forEach(t => {
+            t.classList.remove('lightning-flash-fx');
+            void t.offsetWidth; // रिफ्लो ट्रिगर करें ताकि एनीमेशन दोबारा शुरू हो सके
+            t.classList.add('lightning-flash-fx');
+        });
+    }
+
+    function drawRain(timestamp) {
+        if (!lastLightningTime) lastLightningTime = timestamp;
+
+        // हर 1.5 से 2.5 सेकंड में बिजली गिराएं (आपके निर्देशानुसार)
+        if (timestamp - lastLightningTime > lightningInterval) {
+            triggerLightning();
+            lastLightningTime = timestamp;
+            lightningInterval = 1500 + Math.random() * 1000; // अगली बिजली 1.5 से 2.5 सेकंड के बीच
+        }
+
+        rCtx.clearRect(0, 0, rWidth, rHeight);
+        rCtx.lineWidth = 1.2;
+        rCtx.lineCap = 'round';
+        
+        // 1. बारिश ड्रा करें
+        for(let i = 0; i < rainDrops.length; i++) {
+            let p = rainDrops[i];
+            rCtx.strokeStyle = 'rgba(150, 170, 200, ' + p.o + ')';
+            rCtx.beginPath();
+            rCtx.moveTo(p.x, p.y);
+            rCtx.lineTo(p.x + p.l * p.xs / p.ys, p.y + p.l);
+            rCtx.stroke();
+            
+            p.x += p.xs;
+            p.y += p.ys;
+            
+            if(p.x > rWidth || p.y > rHeight) {
+                p.x = Math.random() * rWidth;
+                p.y = -20;
+            }
+        }
+
+        // 2. बिजली और बैकग्राउंड फ़्लैश ड्रा करें
+        for (let i = lightnings.length - 1; i >= 0; i--) {
+            let l = lightnings[i];
+            let opacity = l.life / l.maxLife;
+
+            // बैकग्राउंड को सफेद चमकाएं (कैनवास पर)
+            rCtx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.35})`;
+            rCtx.fillRect(0, 0, rWidth, rHeight);
+
+            // डबल फ़्लैश के लिए (एकदम रियल इफ़ेक्ट)
+            if (l.life > l.maxLife * 0.8 || (l.life < l.maxLife * 0.5 && l.life > l.maxLife * 0.3)) {
+                 rCtx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.6})`;
+                 rCtx.fillRect(0, 0, rWidth, rHeight);
+            }
+
+            // बिजली की लाइन
+            rCtx.beginPath();
+            rCtx.moveTo(l.segments[0].x, l.segments[0].y);
+            for (let j = 1; j < l.segments.length; j++) {
+                rCtx.lineTo(l.segments[j].x, l.segments[j].y);
+            }
+
+            // बाहरी चमक (Outer Glow)
+            rCtx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+            rCtx.lineWidth = 4;
+            rCtx.shadowBlur = 30;
+            rCtx.shadowColor = "white";
+            rCtx.stroke();
+
+            // अंदर की सफेद लाइन (Inner Core)
+            rCtx.strokeStyle = `rgba(220, 240, 255, ${opacity})`;
+            rCtx.lineWidth = 1.5;
+            rCtx.shadowBlur = 10;
+            rCtx.stroke();
+
+            rCtx.shadowBlur = 0; // बारिश के लिए रीसेट करें
+
+            l.life--;
+            if (l.life <= 0) lightnings.splice(i, 1);
+        }
+
+        requestAnimationFrame(drawRain);
+    }
+
+    window.addEventListener('resize', resizeRain);
+    
+    // Initialize rain on load
+    window.onload = function() {
+        initRain();
+    }
+
+</script>
+</body>
+</html>

@@ -1,1 +1,34 @@
 
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f2027"/>
+      <stop offset="50%" stop-color="#203a43"/>
+      <stop offset="100%" stop-color="#2c5364"/>
+    </linearGradient>
+    
+    <!-- Accent Color Gradient (Cyan/Blue) -->
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00c6ff"/>
+      <stop offset="100%" stop-color="#0072ff"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Main Rounded Background -->
+  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
+  
+  <!-- Stylish Inner Border -->
+  <rect x="40" y="40" width="432" height="432" rx="90" fill="none" stroke="url(#accent)" stroke-width="8" opacity="0.7"/>
+  
+  <!-- Main "SR" Letters -->
+  <text x="256" y="295" font-family="Arial, Helvetica, sans-serif" font-size="220" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="-5">SR</text>
+  
+  <!-- "STUDIO" Text -->
+  <text x="256" y="390" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="bold" fill="url(#accent)" text-anchor="middle" letter-spacing="18">STUDIO</text>
+  
+  <!-- Modern Decorative Dots & Lines -->
+  <circle cx="256" cy="110" r="15" fill="#00c6ff" />
+  <path d="M110 256 L150 256" stroke="url(#accent)" stroke-width="8" stroke-linecap="round" opacity="0.6"/>
+  <path d="M402 256 L362 256" stroke="url(#accent)" stroke-width="8" stroke-linecap="round" opacity="0.6"/>
+</svg>
